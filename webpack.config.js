@@ -1,32 +1,71 @@
 // webpack 是node写出来的 node的写法
 let path = require('path');
 let HtmlWebpackPlugin = require('html-webpack-plugin');
+let MiniCssExtractPlugin = require('mini-css-extract-plugin'); // 抽离css
+let OptimizeCss = require('optimize-css-assets-webpack-plugin')
+let UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
-  devServer: {  // 开发服务器
+  optimization: { // 优化项
+    minimizer: [
+      new UglifyJsPlugin({ // js压缩
+        cache: true,
+        parallel: true, // 并发处理
+        sourceMap: true
+      }),
+      new OptimizeCss()
+    ]
+  },
+  devServer: {  
     port:3000,
     progress: true,
-    contentBase: './build/', // 运行build文件夹下的内容
-    open:true, // 自动打开浏览器
-    compress: true, // zip 压缩
+    contentBase: './build/', 
+    compress: true, 
   },
-  mode: 'development', //两种模式 production development
-  entry: './src/index.js', // 入口
+  mode: 'production', 
+  entry: './src/index.js', 
   output: {
-    filename: 'bundle.[hash:8].js', // 打包后的文件名
-    path: path.resolve(__dirname, 'build') // 绝对路径（当前路径下新建 build 文件夹）
+    filename: 'bundle.[hash:8].js', 
+    path: path.resolve(__dirname, 'build') 
   },
   plugins:[
     new HtmlWebpackPlugin({
       template: './src/index.html',
       filename: 'index.html',
-      minify: {
-        removeAttributeQuotes: true, // 压缩的时候去掉 双引号
-        collapseWhitespace: true, // 打包出来的文件 压缩成一行 
-      },
-      hash: true, // hash戳 一段数字 缓存对比
-    }) 
-  ]
+      hash: true,
+    }),
+    new MiniCssExtractPlugin({
+      filename: 'main.css'
+    })   
+  ],
+  module: { // 模块解析
+    rules: [
+      /*
+        规则：
+          css-loader 解析 @import这种语法
+          style-loader 他是把css 插入到head的标签中
+          loader的特点 希望单一
+          loader的顺序 默认是从右向左执行 从下到上执行
+          loader还可以写成 对象形式
+          可以处理less文件
+      */
+     {
+       test: /\.css$/,
+       use: [
+          MiniCssExtractPlugin.loader,
+         'css-loader',
+         'postcss-loader',
+       ]
+     },
+     {
+      test: /\.less$/,
+      use: [
+        MiniCssExtractPlugin.loader,
+        'css-loader', // @import 解析路径
+        'postcss-loader',
+        'less-loader', // 把less -> css
+        ]
+      }
+    ]
+  }
 }
-
-console.log(path.resolve(__dirname, 'build'))
